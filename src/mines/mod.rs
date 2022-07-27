@@ -107,15 +107,40 @@ impl Minesweeper {
             self.calc_neighbour_mines();
         }
 
+        let mut cascaded_open = false;
+
         match self.field_at_mut(pos).expect("Position not on the mines field!")
         {
             Field::Empty(e) => {
                 println!("Nice!");
                 e.hidden = false;
+                cascaded_open = true;
             }
             Field::Mine(m) => {
                 println!("You lose!");
-                m.hidden = false;
+                self.open_all_fields();
+            }
+        }
+
+        if cascaded_open {
+            self.iterate_over_neighbours(pos, |field| {
+                match field {
+                    Field::Empty(e) => {
+                        if e.neighbours <= 1 {
+                            e.hidden = false;
+                        }
+                    }
+                    _ => {}
+                }
+            });
+        }
+    }
+
+    fn open_all_fields(&mut self) {
+        for field in self.fields.iter_mut() {
+            match field {
+                Field::Empty(e) => e.hidden = false,
+                Field::Mine(e) => e.hidden = false,
             }
         }
     }
@@ -144,27 +169,34 @@ impl Minesweeper {
         }
     }
 
-    fn get_neighbour_mines(&self, pos: Position) -> u8 {
+    fn iterate_over_neighbours(&mut self, pos: Position, mut cb: impl FnMut(&mut Field)) {
         let neighbour_offsets = [
             (-1, -1), (0, -1), (1, -1),
             (-1, 0), (0, 0), (1, 0),
             (-1, 1), (0, 1), (1, 1),
         ];
 
-        let mut mine_count = 0;
         for offset in neighbour_offsets {
             let x = pos.0 as i32 + offset.0;
             let y = pos.1 as i32 + offset.1;
 
             if x >= 0 && x < self.width {
                 if y >= 0 && y < self.height {
-                    match self.field_at((x, y)) {
-                        Some(Field::Mine(_)) => mine_count += 1,
-                        _ => {}
-                    }
+                    let field = self.field_at_mut((x, y)).unwrap();
+                    cb(field);
                 }
             }
         }
+    }
+
+    fn get_neighbour_mines(&mut self, pos: Position) -> u8 {
+        let mut mine_count = 0;
+        self.iterate_over_neighbours(pos, |field| {
+            match field {
+                Field::Mine(_) => mine_count += 1,
+                _ => {}
+            };
+        });
         mine_count as u8
     }
 
@@ -228,11 +260,10 @@ mod tests {
         let mut mw = Minesweeper::new(10, 10);
         print!("{}", mw);
 
-        for x in 0..5 {
-            for y in 0..5 {
-                mw.click((x, y));
-                print!("{}", mw);
-            }
+        for _ in 0..10 {
+            let pos = rand_pos_in_range((10, 10));
+            mw.click(pos);
+            print!("{}", mw);
         }
     }
 }
