@@ -7,3 +7,9 @@ edition = "2021"
 
 [dependencies]
 regex = "1"
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+chrono = "0.4.19"
+serialport = "4.2.0"
+crc = "3.0.0"
+rand = "0.8.5"
