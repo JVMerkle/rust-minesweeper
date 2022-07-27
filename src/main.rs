@@ -1,3 +1,4 @@
+#![feature(generic_associated_types)]
 #![allow(unused)]
 
 extern crate core;

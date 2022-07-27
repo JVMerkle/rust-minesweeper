@@ -1,3 +1,5 @@
+use std::array::IntoIter;
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
 use rand::Rng;
@@ -118,25 +120,24 @@ impl Minesweeper {
             }
             Field::Mine(m) => {
                 println!("You lose!");
-                self.open_all_fields();
+                self.show_all_fields();
             }
         }
 
         if cascaded_open {
-            self.iterate_over_neighbours(pos, |field| {
-                match field {
-                    Field::Empty(e) => {
-                        if e.neighbours <= 1 {
-                            e.hidden = false;
-                        }
+            for neighbour in NeighbourIter::new(pos).take(100) {
+                if let Some(neighbour_field) = self.field_at_mut(neighbour) {
+                    if let Field::Empty(f) = neighbour_field {
+                        f.hidden = false;
+                    } else {
+                        break;
                     }
-                    _ => {}
                 }
-            });
+            }
         }
     }
 
-    fn open_all_fields(&mut self) {
+    fn show_all_fields(&mut self) {
         for field in self.fields.iter_mut() {
             match field {
                 Field::Empty(e) => e.hidden = false,
@@ -169,29 +170,17 @@ impl Minesweeper {
         }
     }
 
-    fn iterate_over_neighbours(&mut self, pos: Position, mut cb: impl FnMut(&mut Field)) {
-        let neighbour_offsets = [
-            (-1, -1), (0, -1), (1, -1),
-            (-1, 0), (0, 0), (1, 0),
-            (-1, 1), (0, 1), (1, 1),
-        ];
-
-        for offset in neighbour_offsets {
-            let x = pos.0 as i32 + offset.0;
-            let y = pos.1 as i32 + offset.1;
-
-            if x >= 0 && x < self.width {
-                if y >= 0 && y < self.height {
-                    let field = self.field_at_mut((x, y)).unwrap();
-                    cb(field);
-                }
+    fn iterate_over_neighbours(&mut self, pos: Position, mut cb: impl FnMut(Position, &mut Field)) {
+        for neighbour in NeighbourIter::new(pos).take(8) {
+            if let Some(neighbour_field) = self.field_at_mut(neighbour) {
+                cb(neighbour, neighbour_field);
             }
         }
     }
 
     fn get_neighbour_mines(&mut self, pos: Position) -> u8 {
         let mut mine_count = 0;
-        self.iterate_over_neighbours(pos, |field| {
+        self.iterate_over_neighbours(pos, |_, field| {
             match field {
                 Field::Mine(_) => mine_count += 1,
                 _ => {}
@@ -251,8 +240,50 @@ impl Display for Minesweeper {
     }
 }
 
+struct NeighbourIter {
+    origin: Position,
+    i: usize,
+    distance: i32,
+}
+
+impl NeighbourIter {
+    fn new(origin: Position) -> Self {
+        NeighbourIter {
+            origin,
+            i: 0,
+            distance: 1,
+        }
+    }
+}
+
+impl Iterator for NeighbourIter {
+    type Item = Position;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let neighbour_offsets = [
+            (-1, -1), (0, -1), (1, -1),
+            (-1, 0), /*******/ (1, 0),
+            (-1, 1), (0, 1), (1, 1),
+        ];
+
+        let offset = neighbour_offsets[self.i];
+
+        let pos = (self.origin.0 + offset.0 * self.distance, self.origin.1 + offset.1 * self.distance);
+
+        self.i += 1;
+        if self.i >= neighbour_offsets.len() {
+            self.i = 0;
+            self.distance += 1;
+        }
+
+        Some(pos)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::E;
+
     use super::*;
 
     #[test]
@@ -265,5 +296,17 @@ mod tests {
             mw.click(pos);
             print!("{}", mw);
         }
+    }
+
+
+    #[test]
+    fn neighbour_iter_unique_values() {
+        let neighbours: Vec<Position> = NeighbourIter::new((0, 0)).take(20).collect();
+        let mut unique = neighbours.clone();
+        unique.sort();
+        unique.dedup();
+
+        assert_eq!(neighbours.len(), 20);
+        assert_eq!(neighbours.len(), unique.len());
     }
 }
