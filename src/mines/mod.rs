@@ -4,11 +4,29 @@ use std::fmt::{Display, Formatter};
 
 use rand::Rng;
 
-type Position = (i32, i32);
+#[derive(Copy, Clone, PartialEq)]
+pub struct Position {
+    pub x: i32,
+    pub y: i32,
+}
 
-fn rand_pos_in_range(range: Position) -> Position {
+impl Position {
+    pub fn new() -> Self {
+        Self::from(0, 0)
+    }
+
+    pub fn from(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+
+    pub fn from_tup(pos: (i32, i32)) -> Self {
+        Self { x: pos.0, y: pos.1 }
+    }
+}
+
+pub fn rand_pos_in_range(range: Position) -> Position {
     let mut rng = rand::thread_rng();
-    (rng.gen_range(0..range.0), rng.gen_range(0..range.1))
+    Position::from(rng.gen_range(0..range.x), rng.gen_range(0..range.y))
 }
 
 #[derive(Copy, Clone)]
@@ -96,16 +114,18 @@ impl Display for Field {
     }
 }
 
-struct Minesweeper {
+pub struct Minesweeper {
     fields: Vec<Field>,
     width: i32,
     height: i32,
+
+    cursor: Position,
 
     initialized: bool,
 }
 
 impl Minesweeper {
-    fn new(width: u32, height: u32) -> Minesweeper {
+    pub fn new(width: u32, height: u32) -> Minesweeper {
         let field_count = (width * height);
 
         let mut fields = Vec::new();
@@ -120,10 +140,33 @@ impl Minesweeper {
             width: width as i32,
             height: height as i32,
             initialized: false,
+            cursor: Position::from((width / 2) as i32, (height / 2) as i32),
         }
     }
 
-    fn click(&mut self, pos: Position) {
+    // pub fn cursor_up(&mut self) {
+    //     let new_pos =
+    //     self.is_valid_position()
+    //     if self.cursor.0 >= self.width {
+    //         self.cursor.0 -= self.width;
+    //     }
+    // }
+    //
+    // pub fn cursor_down(&mut self) {
+    //     if self.cursor.0 < self. {
+    //         self.cursor.0 -= self.width;
+    //     }
+    // }
+
+    pub fn set_cursor(&mut self, pos: Position) {
+        if !self.is_valid_position(pos) {
+            panic!("Position not on the mines field!");
+        }
+
+        self.cursor = pos;
+    }
+
+    pub fn click(&mut self) {
         if !self.initialized {
             self.initialized = true;
 
@@ -136,6 +179,7 @@ impl Minesweeper {
             self.calc_neighbours_for_all_empty_fields();
         }
 
+        let pos = self.cursor;
         let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
         match field.typ_mut()
         {
@@ -176,7 +220,7 @@ impl Minesweeper {
 
     fn fill_field_with_mines(&mut self, count: u32) {
         for _ in 0..count {
-            let mine_pos = rand_pos_in_range((self.width, self.height));
+            let mine_pos = rand_pos_in_range(Position::from(self.width, self.height));
 
             match self.field_at_mut(mine_pos) {
                 Some(field) => *field = Field::new_mine(),
@@ -188,7 +232,7 @@ impl Minesweeper {
     fn calc_neighbours_for_all_empty_fields(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let position = (x, y);
+                let position = Position::from(x, y);
                 let count = self.get_neighbour_mines(position);
                 match self.field_at_mut(position).unwrap().typ_mut() {
                     Type::Empty(e) => e.neighbours = count,
@@ -235,12 +279,18 @@ impl Minesweeper {
 
     fn position_to_index(&self, pos: Position) -> usize {
         // index = y * width + x
-        (pos.1 * self.width + pos.0) as usize
+        (pos.y * self.width + pos.x) as usize
+    }
+
+    fn index_to_position(&self, index: usize) -> Position {
+        let x = index % self.width as usize;
+        let y = index / self.width as usize;
+        Position::from(x as i32, y as i32)
     }
 
     fn is_valid_position(&self, pos: Position) -> bool {
-        if 0 <= pos.0 && pos.0 < self.width {
-            if 0 <= pos.1 && pos.1 < self.height {
+        if 0 <= pos.x && pos.x < self.width {
+            if 0 <= pos.y && pos.y < self.height {
                 return true;
             }
         }
@@ -264,7 +314,11 @@ impl Display for Minesweeper {
                 write!(f, "|")?;
             }
 
-            write!(f, " {} ", field)?;
+            if self.index_to_position(i) == self.cursor {
+                write!(f, "[{}]", field)?;
+            } else {
+                write!(f, " {} ", field)?;
+            }
 
             if (i + 1) % (self.width as usize) == 0 {
                 write!(f, "|\n")?;
@@ -303,7 +357,7 @@ impl Iterator for NeighbourIter {
 
         let offset = neighbour_offsets[self.i];
 
-        let pos = (self.origin.0 + offset.0 * self.distance, self.origin.1 + offset.1 * self.distance);
+        let pos = Position::from(self.origin.x + offset.0 * self.distance, self.origin.y + offset.1 * self.distance);
 
         self.i += 1;
         if self.i >= neighbour_offsets.len() {
@@ -327,8 +381,9 @@ mod tests {
         print!("{}", mw);
 
         for _ in 0..10 {
-            let pos = rand_pos_in_range((10, 10));
-            mw.click(pos);
+            let pos = rand_pos_in_range(Position::from(10, 10));
+            mw.set_cursor(pos);
+            mw.click();
             print!("{}", mw);
         }
     }
@@ -336,7 +391,7 @@ mod tests {
 
     #[test]
     fn neighbour_iter_unique_values() {
-        let neighbours: Vec<Position> = NeighbourIter::new((0, 0)).take(20).collect();
+        let neighbours: Vec<Position> = NeighbourIter::new(Position::from(0, 0)).take(20).collect();
         let mut unique = neighbours.clone();
         unique.sort();
         unique.dedup();

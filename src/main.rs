@@ -3,33 +3,22 @@
 
 extern crate core;
 
-use std::error::Error;
-
-use hyper::{body::HttpBody as _, Client, Uri};
-
 mod another;
 mod event;
 mod semver2;
 mod thread_pool;
 mod mines;
 
-async fn foo() {
-    println!("Hello from foo!");
-}
+use mines::*;
 
-#[tokio::main]
-async fn main() {
-    let client = Client::new();
+fn main() {
+    let mut field = Minesweeper::new(10, 10);
 
-    let res = client
-        .get(Uri::from_static("http://essrv10.richard-wolf.com/kimai/api/"))
-        .await.unwrap();
+    for _ in 0..10 {
+        let pos = rand_pos_in_range(Position::from(10, 10));
+        field.set_cursor(pos);
+        field.click();
 
-    println!("status: {}", res.status());
-
-    let buf = hyper::body::to_bytes(res).await.unwrap();
-
-    foo().await;
-
-    println!("body: {:?}", buf);
+        print!("{}", field);
+    }
 }
