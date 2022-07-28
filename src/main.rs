@@ -34,6 +34,7 @@ fn main() {
             b's' => field.move_cursor(Direction::Down),
             b'a' => field.move_cursor(Direction::Left),
             b'd' => field.move_cursor(Direction::Right),
+            b'x' => field.toggle_marked_at_cursor(),
             b' ' => field.click(),
             _ => { continue; }
         };

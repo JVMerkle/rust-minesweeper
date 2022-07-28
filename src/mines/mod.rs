@@ -45,7 +45,7 @@ impl Display for Type {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match *self {
             Type::Empty(t) => write!(f, "{}", t),
-            Type::Mine => write!(f, "X"),
+            Type::Mine => write!(f, "⬤"),
         }
     }
 }
@@ -53,6 +53,7 @@ impl Display for Type {
 struct Field {
     t: Type,
     hidden: bool,
+    marked: bool,
 }
 
 impl Field {
@@ -60,6 +61,7 @@ impl Field {
         Field {
             t: Type::Empty(Empty::new()),
             hidden: true,
+            marked: false,
         }
     }
 
@@ -67,6 +69,7 @@ impl Field {
         Field {
             t: Type::Mine,
             hidden: true,
+            marked: false,
         }
     }
 
@@ -82,14 +85,28 @@ impl Field {
         self.hidden
     }
 
+    fn is_marked(&self) -> bool {
+        self.marked
+    }
+
     fn reveal(&mut self) {
         self.hidden = false;
+    }
+
+    fn mark(&mut self) {
+        self.marked = true;
+    }
+
+    fn unmark(&mut self) {
+        self.marked = false;
     }
 }
 
 impl Display for Field {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.hidden {
+        if self.hidden && self.marked {
+            write!(f, "X")?;
+        } else if self.hidden {
             write!(f, "▓")?;
         } else {
             write!(f, "{}", &self.t)?;
@@ -156,6 +173,15 @@ impl Minesweeper {
         }
 
         self.cursor = pos;
+    }
+
+    pub fn toggle_marked_at_cursor(&mut self) {
+        let mut field = self.field_at_mut(self.cursor).unwrap();
+        if field.is_marked() {
+            field.unmark();
+        } else {
+            field.mark();
+        }
     }
 
     pub fn click(&mut self) {
