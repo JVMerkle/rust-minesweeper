@@ -199,6 +199,12 @@ impl Minesweeper {
 
         let pos = self.cursor;
         let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
+
+        // Prevent clicking marked fields
+        if field.is_marked() {
+            return;
+        }
+
         match field.typ_mut()
         {
             Type::Empty(_) => {
@@ -214,6 +220,16 @@ impl Minesweeper {
     }
 
     fn recursively_open_fields(&mut self, pos: Position) {
+
+        // // Do not open recursively if the current field has neighbours
+        // if let Some(current_field) = self.field_at(pos) {
+        //     if let Type::Empty(e) = current_field.typ() {
+        //         if e.neighbours != 0 {
+        //             return;
+        //         }
+        //     }
+        // }
+
         for neighbour in NeighbourIter::new(pos).take(8) {
             if let Some(field) = self.field_at_mut(neighbour) {
                 if let Type::Empty(empty_field) = field.typ() {
