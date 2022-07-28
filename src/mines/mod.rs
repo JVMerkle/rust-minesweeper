@@ -2,7 +2,6 @@ use std::array::IntoIter;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
-use cgmath::num_traits::pow;
 use rand::Rng;
 
 type Position = (i32, i32);
@@ -14,13 +13,12 @@ fn rand_pos_in_range(range: Position) -> Position {
 
 struct Empty {
     hidden: bool,
-    visited: i32,
     neighbours: u8,
 }
 
 impl Empty {
     fn new() -> Self {
-        Empty { hidden: true, visited: 0, neighbours: 0 }
+        Empty { hidden: true, neighbours: 0 }
     }
 
     fn show(&mut self) {
@@ -43,12 +41,11 @@ impl Display for Empty {
 
 struct Mine {
     hidden: bool,
-    visited: i32,
 }
 
 impl Mine {
     fn new() -> Self {
-        Mine { hidden: true, visited: 0 }
+        Mine { hidden: true }
     }
 
     fn show(&mut self) {
@@ -112,23 +109,17 @@ impl Minesweeper {
             self.calc_neighbour_mines();
         }
 
-        let mut cascaded_open = false;
-
         match self.field_at_mut(pos).expect("Position not on the mines field!")
         {
             Field::Empty(e) => {
                 println!("Nice!");
                 e.hidden = false;
-                cascaded_open = true;
+                self.recurse_open(pos);
             }
             Field::Mine(m) => {
                 println!("You lose!");
                 self.show_all_fields();
             }
-        }
-
-        if cascaded_open {
-            self.recurse_open(pos);
         }
     }
 
@@ -201,27 +192,33 @@ impl Minesweeper {
     }
 
     fn field_at(&self, pos: Position) -> Option<&Field> {
-        let x = pos.0;
-        let y = pos.1;
-        if 0 <= x && x < self.width {
-            if 0 <= y && y < self.height {
-                let idx = (y * self.width + x) as usize;
-                return Some(&self.fields[idx]);
-            }
+        if self.is_valid_position(pos) {
+            let idx = self.position_to_index(pos);
+            return Some(&self.fields[idx]);
         }
         None
     }
 
     fn field_at_mut(&mut self, pos: Position) -> Option<&mut Field> {
-        let x = pos.0;
-        let y = pos.1;
-        if 0 <= x && x < self.width {
-            if 0 <= y && y < self.height {
-                let idx = (y * self.width + x) as usize;
-                return Some(&mut self.fields[idx]);
-            }
+        if self.is_valid_position(pos) {
+            let idx = self.position_to_index(pos);
+            return Some(&mut self.fields[idx]);
         }
         None
+    }
+
+    fn position_to_index(&self, pos: Position) -> usize {
+        // index = y * width + x
+        (pos.1 * self.width + pos.0) as usize
+    }
+
+    fn is_valid_position(&self, pos: Position) -> bool {
+        if 0 <= pos.0 && pos.0 < self.width {
+            if 0 <= pos.1 && pos.1 < self.height {
+                return true;
+            }
+        }
+        false
     }
 
     fn print_border(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
