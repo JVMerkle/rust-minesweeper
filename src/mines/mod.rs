@@ -11,26 +11,20 @@ fn rand_pos_in_range(range: Position) -> Position {
     (rng.gen_range(0..range.0), rng.gen_range(0..range.1))
 }
 
+#[derive(Copy, Clone)]
 struct Empty {
-    hidden: bool,
     neighbours: u8,
 }
 
 impl Empty {
     fn new() -> Self {
-        Empty { hidden: true, neighbours: 0 }
-    }
-
-    fn show(&mut self) {
-        self.hidden = true;
+        Empty { neighbours: 0 }
     }
 }
 
 impl Display for Empty {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.hidden {
-            write!(f, "▓")?;
-        } else if self.neighbours != 0 {
+        if self.neighbours != 0 {
             write!(f, "{}", self.neighbours)?;
         } else {
             write!(f, "░")?;
@@ -39,34 +33,19 @@ impl Display for Empty {
     }
 }
 
-struct Mine {
-    hidden: bool,
-}
-
-impl Mine {
-    fn new() -> Self {
-        Mine { hidden: true }
-    }
-
-    fn show(&mut self) {
-        self.hidden = true;
-    }
-}
-
-impl Display for Mine {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.hidden {
-            write!(f, "▓")?;
-        } else {
-            write!(f, "X")?;
-        }
-        Ok(())
-    }
-}
-
+#[derive(Copy, Clone)]
 enum Type {
     Empty(Empty),
-    Mine(Mine),
+    Mine,
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        match *self {
+            Type::Empty(t) => write!(f, "{}", t),
+            Type::Mine => write!(f, "X"),
+        }
+    }
 }
 
 struct Field {
@@ -82,26 +61,38 @@ impl Field {
         }
     }
 
-    fn from_mine(mine: Mine) -> Self {
+    fn from_mine() -> Self {
         Field {
-            t: Type::Mine(mine),
+            t: Type::Mine,
             hidden: true,
         }
     }
 
-    fn typ(&self) -> &Type {
-        &self.t
+    fn typ(&self) -> Type {
+        self.t
     }
 
     fn typ_mut(&mut self) -> &mut Type {
         &mut self.t
     }
 
+    fn is_hidden(&self) -> bool {
+        self.hidden
+    }
+
     fn reveal(&mut self) {
-        match &mut self.t {
-            Type::Empty(e) => e.hidden = false,
-            Type::Mine(e) => e.hidden = false,
+        self.hidden = false;
+    }
+}
+
+impl Display for Field {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.hidden {
+            write!(f, "▓")?;
+        } else {
+            write!(f, "{}", &self.t)?;
         }
+        Ok(())
     }
 }
 
@@ -145,14 +136,15 @@ impl Minesweeper {
             self.calc_neighbours_for_all_mines();
         }
 
-        match self.field_at_mut(pos).expect("Position not on the mines field!").typ_mut()
+        let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
+        match field.typ_mut()
         {
             Type::Empty(e) => {
                 println!("Nice!");
-                e.hidden = false;
+                field.reveal();
                 self.recursively_open_fields(pos);
             }
-            Type::Mine(m) => {
+            Type::Mine => {
                 println!("You lose!");
                 self.reveal_all_fields();
             }
@@ -162,11 +154,10 @@ impl Minesweeper {
     fn recursively_open_fields(&mut self, pos: Position) {
         for neighbour in NeighbourIter::new(pos).take(8) {
             if let Some(field) = self.field_at_mut(neighbour) {
-                if let Type::Empty(empty_field) = field.typ_mut() {
-                    // Open all empty fields
-                    if empty_field.hidden {
-                        empty_field.hidden = false;
-
+                if let Type::Empty(empty_field) = field.typ() {
+                    // Only process hidden fields
+                    if field.is_hidden() {
+                        field.reveal();
                         // Recursively open all fields that have ZERO neighbours
                         if empty_field.neighbours == 0 {
                             self.recursively_open_fields(neighbour);
@@ -188,7 +179,7 @@ impl Minesweeper {
             let mine_pos = rand_pos_in_range((self.width, self.height));
 
             match self.field_at_mut(mine_pos) {
-                Some(field) => *field = Field::from_mine(Mine::new()),
+                Some(field) => *field = Field::from_mine(),
                 None => {}
             }
         }
@@ -219,7 +210,7 @@ impl Minesweeper {
         let mut mine_count = 0;
         self.iterate_over_neighbours(pos, |_, field| {
             match field {
-                Type::Mine(_) => mine_count += 1,
+                Type::Mine => mine_count += 1,
                 _ => {}
             };
         });
@@ -273,10 +264,7 @@ impl Display for Minesweeper {
                 write!(f, "|")?;
             }
 
-            match field.typ() {
-                Type::Mine(m) => write!(f, " {} ", m)?,
-                Type::Empty(e) => write!(f, " {} ", e)?,
-            }
+            write!(f, " {} ", field)?;
 
             if (i + 1) % (self.width as usize) == 0 {
                 write!(f, "|\n")?;
