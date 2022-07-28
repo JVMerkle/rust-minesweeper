@@ -2,6 +2,7 @@ use std::array::IntoIter;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
+use cgmath::num_traits::pow;
 use rand::Rng;
 
 type Position = (i32, i32);
@@ -13,12 +14,13 @@ fn rand_pos_in_range(range: Position) -> Position {
 
 struct Empty {
     hidden: bool,
+    visited: i32,
     neighbours: u8,
 }
 
 impl Empty {
     fn new() -> Self {
-        Empty { hidden: true, neighbours: 0 }
+        Empty { hidden: true, visited: 0, neighbours: 0 }
     }
 
     fn show(&mut self) {
@@ -30,10 +32,10 @@ impl Display for Empty {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.hidden {
             write!(f, "▓")?;
-        } else if self.neighbours == 0 {
-            write!(f, "░")?;
-        } else {
+        } else if self.neighbours != 0 {
             write!(f, "{}", self.neighbours)?;
+        } else {
+            write!(f, "░")?;
         }
         Ok(())
     }
@@ -41,11 +43,12 @@ impl Display for Empty {
 
 struct Mine {
     hidden: bool,
+    visited: i32,
 }
 
 impl Mine {
     fn new() -> Self {
-        Mine { hidden: true }
+        Mine { hidden: true, visited: 0 }
     }
 
     fn show(&mut self) {
@@ -100,7 +103,7 @@ impl Minesweeper {
         if !self.initialized {
             self.initialized = true;
 
-            let mine_count = 15 * (self.width * self.height) / 100;
+            let mine_count = 20 * (self.width * self.height) / 100;
             self.fill_with_mines(mine_count as u32);
 
             // First field is a bomb? That's bad, moving the bomb...
@@ -125,12 +128,20 @@ impl Minesweeper {
         }
 
         if cascaded_open {
-            for neighbour in NeighbourIter::new(pos).take(100) {
-                if let Some(neighbour_field) = self.field_at_mut(neighbour) {
-                    if let Field::Empty(f) = neighbour_field {
-                        f.hidden = false;
-                    } else {
-                        break;
+            self.recurse_open(pos);
+        }
+    }
+
+    fn recurse_open(&mut self, pos: Position) {
+        for neighbour in NeighbourIter::new(pos).take(8) {
+            if let Some(Field::Empty(empty_field)) = self.field_at_mut(neighbour) {
+                // Open all empty fields
+                if empty_field.hidden {
+                    empty_field.hidden = false;
+
+                    // Recursively open all fields that have ZERO neighbours
+                    if empty_field.neighbours == 0 {
+                        self.recurse_open(neighbour);
                     }
                 }
             }
@@ -190,23 +201,27 @@ impl Minesweeper {
     }
 
     fn field_at(&self, pos: Position) -> Option<&Field> {
-        let idx = (pos.1 * self.width + pos.0) as usize;
-
-        if idx < self.fields.len() {
-            Some(&self.fields[idx])
-        } else {
-            None
+        let x = pos.0;
+        let y = pos.1;
+        if 0 <= x && x < self.width {
+            if 0 <= y && y < self.height {
+                let idx = (y * self.width + x) as usize;
+                return Some(&self.fields[idx]);
+            }
         }
+        None
     }
 
     fn field_at_mut(&mut self, pos: Position) -> Option<&mut Field> {
-        let idx = (pos.1 * self.width + pos.0) as usize;
-
-        if idx < self.fields.len() {
-            Some(&mut self.fields[idx])
-        } else {
-            None
+        let x = pos.0;
+        let y = pos.1;
+        if 0 <= x && x < self.width {
+            if 0 <= y && y < self.height {
+                let idx = (y * self.width + x) as usize;
+                return Some(&mut self.fields[idx]);
+            }
         }
+        None
     }
 
     fn print_border(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
