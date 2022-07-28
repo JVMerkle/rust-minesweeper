@@ -54,14 +54,14 @@ struct Field {
 }
 
 impl Field {
-    fn new() -> Self {
+    fn new_empty() -> Self {
         Field {
             t: Type::Empty(Empty::new()),
             hidden: true,
         }
     }
 
-    fn from_mine() -> Self {
+    fn new_mine() -> Self {
         Field {
             t: Type::Mine,
             hidden: true,
@@ -112,7 +112,7 @@ impl Minesweeper {
         fields.reserve(field_count as usize);
 
         for _ in 0..field_count {
-            fields.push(Field::new());
+            fields.push(Field::new_empty());
         }
 
         Minesweeper {
@@ -133,13 +133,13 @@ impl Minesweeper {
             // First field is a bomb? That's bad, moving the bomb...
             // Fixme
 
-            self.calc_neighbours_for_all_mines();
+            self.calc_neighbours_for_all_empty_fields();
         }
 
         let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
         match field.typ_mut()
         {
-            Type::Empty(e) => {
+            Type::Empty(_) => {
                 println!("Nice!");
                 field.reveal();
                 self.recursively_open_fields(pos);
@@ -179,13 +179,13 @@ impl Minesweeper {
             let mine_pos = rand_pos_in_range((self.width, self.height));
 
             match self.field_at_mut(mine_pos) {
-                Some(field) => *field = Field::from_mine(),
+                Some(field) => *field = Field::new_mine(),
                 None => {}
             }
         }
     }
 
-    fn calc_neighbours_for_all_mines(&mut self) {
+    fn calc_neighbours_for_all_empty_fields(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
                 let position = (x, y);
@@ -247,7 +247,7 @@ impl Minesweeper {
         false
     }
 
-    fn print_border(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn print_horizontal_border(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for _ in 0..(self.width + 1) {
             write!(f, " _ ")?;
         }
@@ -257,7 +257,7 @@ impl Minesweeper {
 
 impl Display for Minesweeper {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.print_border(f)?;
+        self.print_horizontal_border(f)?;
 
         for (i, field) in self.fields.iter().enumerate() {
             if (i) % (self.width as usize) == 0 {
@@ -270,7 +270,7 @@ impl Display for Minesweeper {
                 write!(f, "|\n")?;
             }
         }
-        self.print_border(f)?;
+        self.print_horizontal_border(f)?;
         Ok(())
     }
 }
