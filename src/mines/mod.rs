@@ -4,25 +4,9 @@ use std::fmt::{Display, Formatter};
 
 use rand::Rng;
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct Position {
-    pub x: i32,
-    pub y: i32,
-}
+use position::*;
 
-impl Position {
-    pub fn new() -> Self {
-        Self::from(0, 0)
-    }
-
-    pub fn from(x: i32, y: i32) -> Self {
-        Self { x, y }
-    }
-
-    pub fn from_tup(pos: (i32, i32)) -> Self {
-        Self { x: pos.0, y: pos.1 }
-    }
-}
+pub mod position;
 
 pub fn rand_pos_in_range(range: Position) -> Position {
     let mut rng = rand::thread_rng();
@@ -124,6 +108,13 @@ pub struct Minesweeper {
     initialized: bool,
 }
 
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 impl Minesweeper {
     pub fn new(width: u32, height: u32) -> Minesweeper {
         let field_count = (width * height);
@@ -144,19 +135,20 @@ impl Minesweeper {
         }
     }
 
-    // pub fn cursor_up(&mut self) {
-    //     let new_pos =
-    //     self.is_valid_position()
-    //     if self.cursor.0 >= self.width {
-    //         self.cursor.0 -= self.width;
-    //     }
-    // }
-    //
-    // pub fn cursor_down(&mut self) {
-    //     if self.cursor.0 < self. {
-    //         self.cursor.0 -= self.width;
-    //     }
-    // }
+    pub fn move_cursor(&mut self, direction: Direction) {
+        let vertical_jump = Position::from(0, self.width);
+        let horizontal_jump = Position::from(1, 0);
+        let new_pos = match direction {
+            Direction::Up => self.cursor - vertical_jump,
+            Direction::Down => self.cursor + vertical_jump,
+            Direction::Left => self.cursor - horizontal_jump,
+            Direction::Right => self.cursor + horizontal_jump,
+        };
+
+        if self.is_valid_position(new_pos) {
+            self.set_cursor(new_pos);
+        }
+    }
 
     pub fn set_cursor(&mut self, pos: Position) {
         if !self.is_valid_position(pos) {
