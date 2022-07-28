@@ -153,7 +153,7 @@ impl Minesweeper {
     }
 
     pub fn move_cursor(&mut self, direction: Direction) {
-        let vertical_jump = Position::from(0, self.width);
+        let vertical_jump = Position::from(0, 1);
         let horizontal_jump = Position::from(1, 0);
         let new_pos = match direction {
             Direction::Up => self.cursor - vertical_jump,
