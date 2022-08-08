@@ -1,13 +1,14 @@
-pub mod position;
-mod neighbour_iter;
-mod field;
-
 use std::array::IntoIter;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
-use position::*;
+
 use field::*;
 use neighbour_iter::NeighbourIter;
+use position::*;
+
+pub mod position;
+mod neighbour_iter;
+mod field;
 
 pub struct Minesweeper {
     fields: Vec<Field>,
@@ -56,17 +57,17 @@ impl Minesweeper {
             Direction::Right => self.cursor + horizontal_jump,
         };
 
-        if self.is_valid_position(new_pos) {
-            self.set_cursor(new_pos);
-        }
+        // Ignore errors
+        let _ = self.set_cursor(new_pos);
     }
 
-    pub fn set_cursor(&mut self, pos: Position) {
+    pub fn set_cursor(&mut self, pos: Position) -> Result<(), ()> {
         if !self.is_valid_position(pos) {
-            panic!("Position not on the mines field!");
+            Err(())
+        } else {
+            self.cursor = pos;
+            Ok(())
         }
-
-        self.cursor = pos;
     }
 
     pub fn toggle_marked_at_cursor(&mut self) {
@@ -247,16 +248,12 @@ impl Display for Minesweeper {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::E;
-
     use super::*;
 
     #[test]
-    fn aaa() {
+    fn smoke() {
         let mut mw = Minesweeper::new(10, 10);
         print!("{}", mw);
 
@@ -267,5 +264,4 @@ mod tests {
             print!("{}", mw);
         }
     }
-
 }

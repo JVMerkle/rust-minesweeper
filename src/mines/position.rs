@@ -1,4 +1,5 @@
 use std::ops::{Add, Sub};
+
 use rand::Rng;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]

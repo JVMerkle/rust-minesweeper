@@ -34,6 +34,8 @@ fn main() {
             None => break,
         };
 
+        term::clear();
+
         match byte {
             b'w' => field.move_cursor(Direction::Up),
             b's' => field.move_cursor(Direction::Down),
@@ -41,13 +43,10 @@ fn main() {
             b'd' => field.move_cursor(Direction::Right),
             b'f' => field.toggle_marked_at_cursor(),
             b' ' => if field.click().is_err() {
-                term::clear();
                 println!("{}\nYou lose :-(", field);
                 break;
             },
             _ => {}
         };
-
-        term::clear();
     }
 }
