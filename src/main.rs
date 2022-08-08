@@ -13,11 +13,18 @@ mod event;
 mod semver2;
 mod thread_pool;
 mod mines;
+mod term;
 
 fn main() {
+    if let Err(e) = term::unbuffer_stdin() {
+        println!("Could not unbuffer stdin: {:?}", e);
+    }
+
     let mut stdin_iter = std::io::stdin().bytes();
 
     let mut field = Minesweeper::new(10, 10);
+
+    term::clear();
 
     loop {
         print!("{}", field);
@@ -39,8 +46,6 @@ fn main() {
             _ => {},
         };
 
-        for _ in 0..30 {
-            println!();
-        }
+        term::clear();
     }
 }
