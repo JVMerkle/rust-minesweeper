@@ -1,119 +1,13 @@
+pub mod position;
+mod neighbour_iter;
+mod field;
+
 use std::array::IntoIter;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
-
-use rand::Rng;
-
 use position::*;
-
-pub mod position;
-
-pub fn rand_pos_in_range(range: Position) -> Position {
-    let mut rng = rand::thread_rng();
-    Position::from(rng.gen_range(0..range.x), rng.gen_range(0..range.y))
-}
-
-#[derive(Copy, Clone)]
-struct Empty {
-    neighbours: u8,
-}
-
-impl Empty {
-    fn new() -> Self {
-        Empty { neighbours: 0 }
-    }
-}
-
-impl Display for Empty {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.neighbours != 0 {
-            write!(f, "{}", self.neighbours)?;
-        } else {
-            write!(f, "░")?;
-        }
-        Ok(())
-    }
-}
-
-#[derive(Copy, Clone)]
-enum Type {
-    Empty(Empty),
-    Mine,
-}
-
-impl Display for Type {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        match *self {
-            Type::Empty(t) => write!(f, "{}", t),
-            Type::Mine => write!(f, "⬤"),
-        }
-    }
-}
-
-struct Field {
-    t: Type,
-    hidden: bool,
-    marked: bool,
-}
-
-impl Field {
-    fn new_empty() -> Self {
-        Field {
-            t: Type::Empty(Empty::new()),
-            hidden: true,
-            marked: false,
-        }
-    }
-
-    fn new_mine() -> Self {
-        Field {
-            t: Type::Mine,
-            hidden: true,
-            marked: false,
-        }
-    }
-
-    fn typ(&self) -> Type {
-        self.t
-    }
-
-    fn typ_mut(&mut self) -> &mut Type {
-        &mut self.t
-    }
-
-    fn is_hidden(&self) -> bool {
-        self.hidden
-    }
-
-    fn is_marked(&self) -> bool {
-        self.marked
-    }
-
-    fn reveal(&mut self) {
-        self.hidden = false;
-    }
-
-    fn mark(&mut self) {
-        self.marked = true;
-    }
-
-    fn unmark(&mut self) {
-        self.marked = false;
-    }
-}
-
-impl Display for Field {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.hidden && self.marked {
-            write!(f, "X")?;
-        } else if self.hidden {
-            write!(f, "▓")?;
-        } else {
-            write!(f, "{}", &self.t)?;
-        }
-        Ok(())
-    }
-}
+use field::*;
+use neighbour_iter::NeighbourIter;
 
 pub struct Minesweeper {
     fields: Vec<Field>,
@@ -201,7 +95,7 @@ impl Minesweeper {
         let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
 
         // Prevent clicking marked and already opened fields
-        if field.is_marked() || !field.hidden {
+        if field.is_marked() || !field.hidden() {
             return Ok(());
         }
 
@@ -220,24 +114,14 @@ impl Minesweeper {
     }
 
     fn recursively_open_fields(&mut self, pos: Position) {
-
-        // // Do not open recursively if the current field has neighbours
-        // if let Some(current_field) = self.field_at(pos) {
-        //     if let Type::Empty(e) = current_field.typ() {
-        //         if e.neighbours != 0 {
-        //             return;
-        //         }
-        //     }
-        // }
-
         for neighbour in NeighbourIter::new(pos).take(8) {
             if let Some(field) = self.field_at_mut(neighbour) {
                 if let Type::Empty(empty_field) = field.typ() {
                     // Only process hidden fields
-                    if field.is_hidden() {
+                    if field.hidden() {
                         field.reveal();
                         // Recursively open all fields that have ZERO neighbours
-                        if empty_field.neighbours == 0 {
+                        if empty_field.neighbours() == 0 {
                             self.recursively_open_fields(neighbour);
                         }
                     }
@@ -269,7 +153,7 @@ impl Minesweeper {
                 let position = Position::from(x, y);
                 let count = self.get_neighbour_mines(position);
                 match self.field_at_mut(position).unwrap().typ_mut() {
-                    Type::Empty(e) => e.neighbours = count,
+                    Type::Empty(e) => e.set_neighbours(count),
                     _ => {}
                 }
             }
@@ -363,45 +247,7 @@ impl Display for Minesweeper {
     }
 }
 
-struct NeighbourIter {
-    origin: Position,
-    i: usize,
-    distance: i32,
-}
 
-impl NeighbourIter {
-    fn new(origin: Position) -> Self {
-        NeighbourIter {
-            origin,
-            i: 0,
-            distance: 1,
-        }
-    }
-}
-
-impl Iterator for NeighbourIter {
-    type Item = Position;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let neighbour_offsets = [
-            (-1, -1), (0, -1), (1, -1),
-            (-1, 0), /*******/ (1, 0),
-            (-1, 1), (0, 1), (1, 1),
-        ];
-
-        let offset = neighbour_offsets[self.i];
-
-        let pos = Position::from(self.origin.x + offset.0 * self.distance, self.origin.y + offset.1 * self.distance);
-
-        self.i += 1;
-        if self.i >= neighbour_offsets.len() {
-            self.i = 0;
-            self.distance += 1;
-        }
-
-        Some(pos)
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -422,15 +268,4 @@ mod tests {
         }
     }
 
-
-    #[test]
-    fn neighbour_iter_unique_values() {
-        let neighbours: Vec<Position> = NeighbourIter::new(Position::from(0, 0)).take(20).collect();
-        let mut unique = neighbours.clone();
-        unique.sort();
-        unique.dedup();
-
-        assert_eq!(neighbours.len(), 20);
-        assert_eq!(neighbours.len(), unique.len());
-    }
 }
