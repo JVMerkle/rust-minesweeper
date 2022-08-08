@@ -184,7 +184,7 @@ impl Minesweeper {
         }
     }
 
-    pub fn click(&mut self) {
+    pub fn click(&mut self) -> Result<(), ()> {
         if !self.initialized {
             self.initialized = true;
 
@@ -200,21 +200,21 @@ impl Minesweeper {
         let pos = self.cursor;
         let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
 
-        // Prevent clicking marked fields
-        if field.is_marked() {
-            return;
+        // Prevent clicking marked and already opened fields
+        if field.is_marked() || !field.hidden {
+            return Ok(());
         }
 
         match field.typ_mut()
         {
             Type::Empty(_) => {
-                println!("Nice!");
                 field.reveal();
                 self.recursively_open_fields(pos);
+                Ok(())
             }
             Type::Mine => {
-                println!("You lose!");
                 self.reveal_all_fields();
+                Err(())
             }
         }
     }

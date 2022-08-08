@@ -40,8 +40,12 @@ fn main() {
             b'a' => field.move_cursor(Direction::Left),
             b'd' => field.move_cursor(Direction::Right),
             b'f' => field.toggle_marked_at_cursor(),
-            b' ' => field.click(),
-            _ => {},
+            b' ' => if field.click().is_err() {
+                term::clear();
+                println!("{}\nYou lose :-(", field);
+                break;
+            },
+            _ => {}
         };
 
         term::clear();
