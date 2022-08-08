@@ -9,11 +9,7 @@ pub enum UnbufferError {
 }
 
 pub fn unbuffer_stdin() -> Result<(), UnbufferError> {
-    let retval = unsafe {
-        tcsetattr_icanon_echo()
-    };
-
-    match retval {
+    match unsafe { tcsetattr_icanon_echo() } {
         -1 => Err(UnbufferError::TcGetAttrFailed),
         -2 => Err(UnbufferError::TcSetAttrFailed),
         _ => Ok(())

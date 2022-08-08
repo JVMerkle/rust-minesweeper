@@ -34,8 +34,6 @@ fn main() {
             None => break,
         };
 
-        //println!("Read {:?}", byte);
-
         match byte {
             b'w' => field.move_cursor(Direction::Up),
             b's' => field.move_cursor(Direction::Down),
