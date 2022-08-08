@@ -8,10 +8,6 @@ use std::io::Read;
 use mines::*;
 use mines::position::*;
 
-mod another;
-mod event;
-mod semver2;
-mod thread_pool;
 mod mines;
 mod term;
 

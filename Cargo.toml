@@ -1,19 +1,11 @@
 [package]
-name = "rust"
-version = "0.1.0"
+name = "minesweeper"
+version = "0.0.1"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Julian Merkle <me@jvmerkle.de>"]
 
 [dependencies]
-regex = "1"
-hyper = { version = "0.14", features = ["full"] }
-tokio = { version = "1", features = ["full"] }
-chrono = "0.4.19"
-serialport = "4.2.0"
-crc = "3.0.0"
 rand = "0.8.5"
-cgmath = "0.18.0"
 
 [target.'cfg(target_os = "linux")'.build-dependencies]
 cc = "1.0.73"
