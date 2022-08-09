@@ -1,0 +1,11 @@
+[package]
+name = "minesweeper"
+version = "0.0.1"
+edition = "2021"
+authors = ["Julian Merkle <me@jvmerkle.de>"]
+
+[dependencies]
+rand = "0.8.5"
+
+[target.'cfg(target_os = "linux")'.build-dependencies]
+cc = "1.0.73"
