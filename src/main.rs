@@ -6,13 +6,13 @@ mod mines;
 mod term;
 
 fn main() {
-    let _ = term::unbuffer_stdin();
+    let term = term::FastTerm::new();
 
     let mut stdin_iter = std::io::stdin().bytes();
 
     let mut field = Minesweeper::new(10, 10);
 
-    term::clear();
+    term.clear();
 
     loop {
         print!("{}", field);
@@ -22,7 +22,7 @@ fn main() {
             None => break,
         };
 
-        term::clear();
+        term.clear();
 
         match byte {
             b'w' => field.move_cursor(Direction::Up),
