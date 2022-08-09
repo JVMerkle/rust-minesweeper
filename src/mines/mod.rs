@@ -91,11 +91,8 @@ impl Minesweeper {
         if !self.initialized {
             self.initialized = true;
 
-            self.fill_field_with_mines(self.mine_count as u32);
+            self.fill_field_with_mines_except(self.mine_count as u32, self.cursor);
             self.remaining_fields_to_open = (self.width * self.height) as usize - self.mine_count;
-
-            // First field is a bomb? That's bad, moving the bomb...
-            // Fixme
 
             self.calc_neighbours_for_all_empty_fields();
         }
@@ -154,10 +151,14 @@ impl Minesweeper {
         }
     }
 
-    fn fill_field_with_mines(&mut self, count: u32) {
+    fn fill_field_with_mines_except(&mut self, count: u32, mine_exception: Position) {
         let mut mines = 0;
         while mines < count {
             let mine_pos = rand_pos_in_range(Position::from(self.width, self.height));
+            if mine_pos == mine_exception {
+                continue;
+            }
+
             let field = self.field_at_mut(mine_pos).unwrap();
             if let Type::Empty(_) = field.typ() {
                 *field = Field::new_mine();
