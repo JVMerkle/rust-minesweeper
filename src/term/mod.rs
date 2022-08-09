@@ -18,7 +18,7 @@ pub fn unbuffer_stdin() -> Result<(), UnbufferError> {
             -1 => Err(UnbufferError::TcGetAttrFailed),
             -2 => Err(UnbufferError::TcSetAttrFailed),
             _ => Ok(())
-        }
+        };
     }
     #[cfg(not(target_os = "linux"))]
     {

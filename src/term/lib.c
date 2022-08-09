@@ -1,9 +1,3 @@
-/**
- * @file
- * @authors Julian Merkle
- * @copyright 2022 Richard Wolf GmbH
- */
-
 #include <termios.h>
 
 int tcsetattr_icanon_echo()

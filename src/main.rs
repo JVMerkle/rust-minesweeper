@@ -1,7 +1,3 @@
-//#![allow(unused)]
-
-extern crate core;
-
 use std::io::Read;
 
 use mines::*;
