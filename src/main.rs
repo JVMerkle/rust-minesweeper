@@ -18,7 +18,7 @@ fn main() {
 
     let mut stdin_iter = std::io::stdin().bytes();
 
-    let mut field = Minesweeper::new(4, 4);
+    let mut field = Minesweeper::new(10, 10);
 
     term::clear();
 
