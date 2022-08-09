@@ -155,12 +155,13 @@ impl Minesweeper {
     }
 
     fn fill_field_with_mines(&mut self, count: u32) {
-        for _ in 0..count {
+        let mut mines = 0;
+        while mines < count {
             let mine_pos = rand_pos_in_range(Position::from(self.width, self.height));
-
-            match self.field_at_mut(mine_pos) {
-                Some(field) => *field = Field::new_mine(),
-                None => {}
+            let field = self.field_at_mut(mine_pos).unwrap();
+            if let Type::Empty(_) = field.typ() {
+                *field = Field::new_mine();
+                mines += 1;
             }
         }
     }
