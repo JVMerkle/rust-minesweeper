@@ -4,6 +4,7 @@ extern "C" {
 }
 
 #[derive(Debug)]
+#[allow(unused)]
 pub enum UnbufferError {
     TcGetAttrFailed,
     TcSetAttrFailed,
@@ -19,8 +20,10 @@ pub fn unbuffer_stdin() -> Result<(), UnbufferError> {
             _ => Ok(())
         }
     }
-    // else
-    Err(UnbufferError::PlatformNotSupported)
+    #[cfg(not(target_os = "linux"))]
+    {
+        Err(UnbufferError::PlatformNotSupported)
+    }
 }
 
 pub fn clear() {
@@ -28,6 +31,8 @@ pub fn clear() {
     {
         print!("\n\u{001b}c");
     }
-    // else
-    println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    #[cfg(not(target_os = "linux"))]
+    {
+        println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    }
 }

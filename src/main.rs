@@ -1,20 +1,16 @@
-#![feature(generic_associated_types)]
-#![allow(unused)]
+//#![allow(unused)]
 
 extern crate core;
 
 use std::io::Read;
 
 use mines::*;
-use mines::position::*;
 
 mod mines;
 mod term;
 
 fn main() {
-    if let Err(e) = term::unbuffer_stdin() {
-        println!("Could not unbuffer stdin: {:?}", e);
-    }
+    let _ = term::unbuffer_stdin();
 
     let mut stdin_iter = std::io::stdin().bytes();
 
@@ -42,14 +38,14 @@ fn main() {
                 GameStatus::YouWin => {
                     println!("{}\nYou win! :-)", field);
                     break;
-                },
+                }
                 GameStatus::YouLose => {
                     println!("{}\nYou lose :-(", field);
                     break;
-                },
-                _ => {},
+                }
+                GameStatus::MoreFieldsNeeded => {}
             },
-            _ => {}
+            _ => { /* Key not mapped */ }
         };
     }
 }

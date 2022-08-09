@@ -8,6 +8,7 @@ pub struct Position {
     pub y: i32,
 }
 
+#[allow(unused)]
 impl Position {
     pub fn new() -> Self {
         Self::from(0, 0)
@@ -19,6 +20,10 @@ impl Position {
 
     pub fn from_tup(pos: (i32, i32)) -> Self {
         Self { x: pos.0, y: pos.1 }
+    }
+
+    fn xy(&self) -> (i32, i32) {
+        (self.x, self.y)
     }
 }
 
@@ -64,6 +69,11 @@ mod tests {
         let a = Position::from_tup((4, -8));
         assert_eq!(a.x, 4);
         assert_eq!(a.y, -8);
+    }
+
+    #[test]
+    fn xy() {
+        assert_eq!(Position::from(4, -8).xy(), (4, -8));
     }
 
     #[test]

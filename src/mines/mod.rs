@@ -1,5 +1,3 @@
-use std::array::IntoIter;
-use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
 use field::*;
@@ -37,7 +35,7 @@ pub enum Direction {
 
 impl Minesweeper {
     pub fn new(width: u32, height: u32) -> Minesweeper {
-        let field_count = (width * height);
+        let field_count = width * height;
 
         let mut fields = Vec::new();
         fields.reserve(field_count as usize);
@@ -52,8 +50,8 @@ impl Minesweeper {
             height: height as i32,
             initialized: false,
             cursor: Position::from((width / 2) as i32, (height / 2) as i32),
-            mine_count: 20 * (width * height) as usize / 100,
-            remaining_fields_to_open: (width * height) as usize,
+            mine_count: 20 * field_count as usize / 100,
+            remaining_fields_to_open: field_count as usize,
         }
     }
 
@@ -81,7 +79,7 @@ impl Minesweeper {
     }
 
     pub fn toggle_marked_at_cursor(&mut self) {
-        let mut field = self.field_at_mut(self.cursor).unwrap();
+        let field = self.field_at_mut(self.cursor).unwrap();
         if field.is_marked() {
             field.unmark();
         } else {
@@ -103,7 +101,7 @@ impl Minesweeper {
         }
 
         let pos = self.cursor;
-        let mut field = self.field_at_mut(pos).expect("Position not on the mines field!");
+        let field = self.field_at_mut(pos).expect("Position not on the mines field!");
 
         // Prevent clicking marked and already opened fields
         if field.is_marked() || !field.hidden() {
@@ -199,14 +197,6 @@ impl Minesweeper {
         mine_count as u8
     }
 
-    fn field_at(&self, pos: Position) -> Option<&Field> {
-        if self.is_valid_position(pos) {
-            let idx = self.position_to_index(pos);
-            return Some(&self.fields[idx]);
-        }
-        None
-    }
-
     fn field_at_mut(&mut self, pos: Position) -> Option<&mut Field> {
         if self.is_valid_position(pos) {
             let idx = self.position_to_index(pos);
@@ -279,7 +269,7 @@ mod tests {
 
         for _ in 0..10 {
             let pos = rand_pos_in_range(Position::from(10, 10));
-            mw.set_cursor(pos);
+            mw.set_cursor(pos).unwrap();
             mw.click();
             print!("{}", mw);
         }
