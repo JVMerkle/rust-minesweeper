@@ -18,6 +18,14 @@ pub struct Minesweeper {
     cursor: Position,
 
     initialized: bool,
+    mine_count: usize,
+    remaining_fields_to_open: usize,
+}
+
+pub enum GameStatus {
+    MoreFieldsNeeded,
+    YouWin,
+    YouLose,
 }
 
 pub enum Direction {
@@ -44,6 +52,8 @@ impl Minesweeper {
             height: height as i32,
             initialized: false,
             cursor: Position::from((width / 2) as i32, (height / 2) as i32),
+            mine_count: 20 * (width * height) as usize / 100,
+            remaining_fields_to_open: (width * height) as usize,
         }
     }
 
@@ -79,12 +89,12 @@ impl Minesweeper {
         }
     }
 
-    pub fn click(&mut self) -> Result<(), ()> {
+    pub fn click(&mut self) -> GameStatus {
         if !self.initialized {
             self.initialized = true;
 
-            let mine_count = 20 * (self.width * self.height) / 100;
-            self.fill_field_with_mines(mine_count as u32);
+            self.fill_field_with_mines(self.mine_count as u32);
+            self.remaining_fields_to_open = (self.width * self.height) as usize - self.mine_count;
 
             // First field is a bomb? That's bad, moving the bomb...
             // Fixme
@@ -97,19 +107,27 @@ impl Minesweeper {
 
         // Prevent clicking marked and already opened fields
         if field.is_marked() || !field.hidden() {
-            return Ok(());
+            return GameStatus::MoreFieldsNeeded;
         }
 
         match field.typ_mut()
         {
             Type::Empty(_) => {
                 field.reveal();
+                self.remaining_fields_to_open -= 1;
                 self.recursively_open_fields(pos);
-                Ok(())
+
+                match self.remaining_fields_to_open {
+                    0 => {
+                        self.reveal_all_fields();
+                        GameStatus::YouWin
+                    }
+                    _ => GameStatus::MoreFieldsNeeded,
+                }
             }
             Type::Mine => {
                 self.reveal_all_fields();
-                Err(())
+                GameStatus::YouLose
             }
         }
     }
@@ -121,6 +139,7 @@ impl Minesweeper {
                     // Only process hidden fields
                     if field.hidden() {
                         field.reveal();
+                        self.remaining_fields_to_open -= 1;
                         // Recursively open all fields that have ZERO neighbours
                         if empty_field.neighbours() == 0 {
                             self.recursively_open_fields(neighbour);
@@ -226,6 +245,7 @@ impl Minesweeper {
 
 impl Display for Minesweeper {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Remaining fields: {}  Mines: {}\n", self.remaining_fields_to_open, self.mine_count)?;
         self.print_horizontal_border(f)?;
 
         for (i, field) in self.fields.iter().enumerate() {

@@ -18,7 +18,7 @@ fn main() {
 
     let mut stdin_iter = std::io::stdin().bytes();
 
-    let mut field = Minesweeper::new(10, 10);
+    let mut field = Minesweeper::new(4, 4);
 
     term::clear();
 
@@ -38,9 +38,16 @@ fn main() {
             b'a' => field.move_cursor(Direction::Left),
             b'd' => field.move_cursor(Direction::Right),
             b'f' => field.toggle_marked_at_cursor(),
-            b' ' => if field.click().is_err() {
-                println!("{}\nYou lose :-(", field);
-                break;
+            b' ' => match field.click() {
+                GameStatus::YouWin => {
+                    println!("{}\nYou win! :-)", field);
+                    break;
+                },
+                GameStatus::YouLose => {
+                    println!("{}\nYou lose :-(", field);
+                    break;
+                },
+                _ => {},
             },
             _ => {}
         };
