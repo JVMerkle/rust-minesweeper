@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Julian Merkle
+// SPDX-License-Identifier: GPL-3.0-only
+
 use std::io::Read;
 
 use mines::*;

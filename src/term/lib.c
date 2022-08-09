@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Julian Merkle
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include <termios.h>
 
 static struct termios term_old;

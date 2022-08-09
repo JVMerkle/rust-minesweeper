@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Julian Merkle
+// SPDX-License-Identifier: GPL-3.0-only
+
 #[cfg(target_os = "linux")]
 extern "C" {
     fn termios_icanon_echo() -> i32;
