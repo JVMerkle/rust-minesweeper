@@ -1,6 +1,7 @@
 #[cfg(target_os = "linux")]
 extern "C" {
-    fn tcsetattr_icanon_echo() -> i32;
+    fn termios_icanon_echo() -> i32;
+    fn termios_revert() -> i32;
 }
 
 #[derive(Debug)]
@@ -28,16 +29,20 @@ impl FastTerm {
     fn unbuffer_stdin() -> TerminalResult {
         #[cfg(target_os = "linux")]
         {
-            match unsafe { tcsetattr_icanon_echo() } {
-                0 => Ok(()),
-                -1 => Err(UnbufferError::TcGetAttrFailed),
-                -2 => Err(UnbufferError::TcSetAttrFailed),
-                _ => Err(UnbufferError::Unknown),
-            }
+            Self::parse_terminal_result(unsafe { termios_icanon_echo() })
         }
         #[cfg(not(target_os = "linux"))]
         {
             Err(UnbufferError::PlatformNotSupported)
+        }
+    }
+
+    fn parse_terminal_result(result: i32) -> TerminalResult {
+        match result {
+            0 => Ok(()),
+            -1 => Err(UnbufferError::TcGetAttrFailed),
+            -2 => Err(UnbufferError::TcSetAttrFailed),
+            _ => Err(UnbufferError::Unknown),
         }
     }
 
@@ -60,5 +65,15 @@ impl FastTerm {
 
     fn terminal_agnostic_clear() {
         println!("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    }
+}
+
+impl Drop for FastTerm {
+    fn drop(&mut self) {
+        if let Ok(_) = self.self_test_result {
+            if let Err(e) = Self::parse_terminal_result(unsafe { termios_revert() }) {
+                eprintln!("Could not revert terminal settings: {:?}", e);
+            }
+        }
     }
 }

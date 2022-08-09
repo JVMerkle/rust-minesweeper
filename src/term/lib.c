@@ -1,18 +1,31 @@
 #include <termios.h>
 
-int tcsetattr_icanon_echo()
-{
-    struct termios term;
+static struct termios term_old;
 
-    if (tcgetattr(0, &term))
+int termios_icanon_echo()
+{
+    struct termios term_new;
+
+    if (tcgetattr(0, &term_old))
     {
         return -1;
     }
 
-    term.c_lflag &= ~ICANON;
-    term.c_lflag |= ECHO;
+    term_new = term_old;
+    term_new.c_lflag &= ~ICANON;
+    term_new.c_lflag |= ECHO;
 
-    if (tcsetattr(0, TCSANOW, &term))
+    if (tcsetattr(0, TCSANOW, &term_new))
+    {
+        return -2;
+    }
+
+    return 0;
+}
+
+int termios_revert()
+{
+    if (tcsetattr(0, TCSANOW, &term_old))
     {
         return -2;
     }
