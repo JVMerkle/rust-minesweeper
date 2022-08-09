@@ -21,7 +21,7 @@ pub struct Minesweeper {
 }
 
 pub enum GameStatus {
-    MoreFieldsNeeded,
+    Continue,
     YouWin,
     YouLose,
 }
@@ -102,7 +102,7 @@ impl Minesweeper {
 
         // Prevent clicking marked and already opened fields
         if field.is_marked() || !field.hidden() {
-            return GameStatus::MoreFieldsNeeded;
+            return GameStatus::Continue;
         }
 
         match field.typ_mut()
@@ -117,7 +117,7 @@ impl Minesweeper {
                         self.reveal_all_fields();
                         GameStatus::YouWin
                     }
-                    _ => GameStatus::MoreFieldsNeeded,
+                    _ => GameStatus::Continue,
                 }
             }
             Type::Mine => {

@@ -39,7 +39,7 @@ fn main() {
                     println!("{}\nYou lose :-(", field);
                     break;
                 }
-                GameStatus::MoreFieldsNeeded => {}
+                GameStatus::Continue => {}
             },
             _ => { /* Key not mapped */ }
         };
